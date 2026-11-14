@@ -43,6 +43,9 @@ def clean_text(value, field_label, min_len=2):
 
 def validate_username(username, exclude_pk=None):
     username = username.strip()
+    # An existing user keeping their own username (e.g. the 'admin' superuser) is always allowed
+    if exclude_pk and User.objects.filter(pk=exclude_pk, username=username).exists():
+        return username
     if not USERNAME_MIN <= len(username) <= USERNAME_MAX:
         raise ValidationError(f'Username must be {USERNAME_MIN}-{USERNAME_MAX} characters long.')
     if not USERNAME_RE.match(username):

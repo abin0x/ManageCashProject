@@ -161,6 +161,22 @@ class ProfileValidationTests(TestCase):
         self.assertIn('only contain letters', self.errors(self.post(first_name='Abin123'), 'first_name'))
         self.assertIn('at most 50', self.errors(self.post(last_name='A' * 51), 'last_name'))
 
+    def test_admin_superuser_can_keep_reserved_username(self):
+        admin_user = User.objects.create_superuser('admin', 'admin@example.com', '1234')
+        self.client.force_login(admin_user)
+        r = self.post(username='admin', email='admin@example.com')
+        self.assertRedirects(r, reverse('profile'))
+        # ...but nobody else can switch to a reserved name
+        self.client.force_login(self.user)
+        self.assertIn('reserved', self.errors(self.post(username='root'), 'username'))
+
+    def test_spec_superuser_login(self):
+        User.objects.create_superuser('admin', 'admin@example.com', '1234')
+        self.client.post(reverse('logout'))
+        self.assertRedirects(self.client.post(reverse('login'), {'username': 'admin', 'password': '1234'}),
+                             reverse('dashboard'))
+        self.assertEqual(self.client.get('/admin/').status_code, 200)
+
     def test_bangla_name_allowed(self):
         self.assertRedirects(self.post(first_name='মাহমুদুল'), reverse('profile'))
 
