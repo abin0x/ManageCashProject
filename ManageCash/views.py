@@ -1,4 +1,3 @@
-from decimal import Decimal
 from itertools import chain
 
 from django.contrib import messages
@@ -6,16 +5,18 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.models import User
-from django.db.models import Sum
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from .forms import AddCashForm, ExpenseForm, LoginForm, ProfileForm, RegistrationForm
-from .models import AddCash, Expense
+from .forms import (AddCashForm, ExpenseForm, LoginForm, ProfileForm, RegistrationForm,
+                    allow_negative_balance)
+from .models import AddCash, Expense, get_totals
 from .pdf import build_transactions_pdf
+
+FORM_ERROR_MSG = 'Please fix the highlighted errors and try again.'
 
 # kind -> (form class, model, label)
 TRANSACTION_TYPES = {
@@ -30,10 +31,7 @@ def _get_type(kind):
     return TRANSACTION_TYPES[kind]
 
 
-def _totals(user):
-    income = AddCash.objects.filter(user=user).aggregate(t=Sum('amount'))['t'] or Decimal('0')
-    expense = Expense.objects.filter(user=user).aggregate(t=Sum('amount'))['t'] or Decimal('0')
-    return income, expense, income - expense
+_totals = get_totals
 
 
 def _transactions(user):
@@ -57,15 +55,17 @@ def register_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     form = RegistrationForm(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        user = User.objects.create_user(
-            username=form.cleaned_data['username'],
-            email=form.cleaned_data['email'],
-            password=form.cleaned_data['password'],
-        )
-        login(request, user)
-        messages.success(request, 'Account created successfully. Welcome!')
-        return redirect('dashboard')
+    if request.method == 'POST':
+        if form.is_valid():
+            user = User.objects.create_user(
+                username=form.cleaned_data['username'],
+                email=form.cleaned_data['email'],
+                password=form.cleaned_data['password'],
+            )
+            login(request, user)
+            messages.success(request, 'Account created successfully. Welcome!')
+            return redirect('dashboard')
+        messages.error(request, FORM_ERROR_MSG)
     return render(request, 'ManageCash/register.html', {'form': form})
 
 
@@ -76,12 +76,10 @@ def login_view(request):
     if request.method == 'POST' and form.is_valid():
         identifier = form.cleaned_data['username']
         password = form.cleaned_data['password']
-        # Accept either username or email
-        username = identifier
-        if '@' in identifier:
-            match = User.objects.filter(email__iexact=identifier).first()
-            if match:
-                username = match.username
+        # Accept either username or email (both case-insensitive)
+        lookup = {'email__iexact': identifier} if '@' in identifier else {'username__iexact': identifier}
+        match = User.objects.filter(**lookup).first()
+        username = match.username if match else identifier
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
@@ -143,13 +141,15 @@ def transactions_export_pdf(request):
 @login_required
 def transaction_create(request, kind):
     form_class, _, label = _get_type(kind)
-    form = form_class(request.POST or None)
-    if request.method == 'POST' and form.is_valid():
-        obj = form.save(commit=False)
-        obj.user = request.user
-        obj.save()
-        messages.success(request, f'{label} saved successfully.')
-        return redirect('dashboard')
+    form = form_class(request.POST or None, user=request.user)
+    if request.method == 'POST':
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.user = request.user
+            obj.save()
+            messages.success(request, f'{label} saved successfully.')
+            return redirect('dashboard')
+        messages.error(request, FORM_ERROR_MSG)
     title = 'Add Cash' if kind == 'income' else 'Add Expense'
     return render(request, 'ManageCash/transaction_form.html',
                   {'form': form, 'title': title, 'kind': kind})
@@ -159,11 +159,13 @@ def transaction_create(request, kind):
 def transaction_edit(request, kind, pk):
     form_class, model, label = _get_type(kind)
     obj = get_object_or_404(model, pk=pk, user=request.user)
-    form = form_class(request.POST or None, instance=obj)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, f'{label} updated.')
-        return redirect('transactions')
+    form = form_class(request.POST or None, instance=obj, user=request.user)
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'{label} updated.')
+            return redirect('transactions')
+        messages.error(request, FORM_ERROR_MSG)
     return render(request, 'ManageCash/transaction_form.html',
                   {'form': form, 'title': f'Edit {label}', 'kind': kind, 'editing': True})
 
@@ -172,7 +174,15 @@ def transaction_edit(request, kind, pk):
 @require_POST
 def transaction_delete(request, kind, pk):
     _, model, label = _get_type(kind)
-    get_object_or_404(model, pk=pk, user=request.user).delete()
+    obj = get_object_or_404(model, pk=pk, user=request.user)
+    # Deleting income must not leave the balance negative
+    if kind == 'income' and not allow_negative_balance():
+        new_balance = _totals(request.user)[2] - obj.amount
+        if new_balance < 0:
+            messages.error(request, f'Cannot delete this income: your balance would become '
+                                    f'৳ {new_balance:,.2f}. Delete or reduce some expenses first.')
+            return redirect('transactions')
+    obj.delete()
     messages.success(request, f'{label} deleted.')
     return redirect('transactions')
 
@@ -185,11 +195,14 @@ def profile(request):
     password_form = PasswordChangeForm(request.user)
     if request.method == 'POST':
         if 'update_profile' in request.POST:
-            profile_form = ProfileForm(request.POST, instance=request.user)
+            # Use a fresh copy: an invalid ModelForm still writes its values onto the
+            # instance, which would otherwise leak into request.user (e.g. the sidebar).
+            profile_form = ProfileForm(request.POST, instance=User.objects.get(pk=request.user.pk))
             if profile_form.is_valid():
                 profile_form.save()
                 messages.success(request, 'Profile updated successfully.')
                 return redirect('profile')
+            messages.error(request, FORM_ERROR_MSG)
         elif 'change_password' in request.POST:
             password_form = PasswordChangeForm(request.user, request.POST)
             if password_form.is_valid():
@@ -197,6 +210,7 @@ def profile(request):
                 update_session_auth_hash(request, user)
                 messages.success(request, 'Password changed successfully.')
                 return redirect('profile')
+            messages.error(request, FORM_ERROR_MSG)
     income, expense, balance = _totals(request.user)
     return render(request, 'ManageCash/profile.html', {
         'profile_form': profile_form,

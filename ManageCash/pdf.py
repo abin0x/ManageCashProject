@@ -107,7 +107,7 @@ def build_transactions_pdf(user, items, kind, overall):
         topMargin=34 * mm, bottomMargin=20 * mm,
         title='ManageCash - Transaction Statement', author=owner,
     )
-    width = doc.width
+    width = doc.width - 12  # frame has 6pt padding on each side; keep tables aligned with text
     story = []
 
     # ---- Account info ----
@@ -135,9 +135,9 @@ def build_transactions_pdf(user, items, kind, overall):
         return [Paragraph(label, st['label']),
                 Paragraph(f'<font color="{hex_color}">{value}</font>', st['value'])]
 
-    boxes = [box('INCOME (THIS STATEMENT)', money(inc), '#059669'),
-             box('EXPENSE (THIS STATEMENT)', money(exp), '#e11d48'),
-             box('NET (THIS STATEMENT)', money(inc - exp), '#059669' if inc >= exp else '#e11d48'),
+    boxes = [box('TOTAL INCOME', money(inc), '#059669'),
+             box('TOTAL EXPENSE', money(exp), '#e11d48'),
+             box('NET AMOUNT', money(inc - exp), '#059669' if inc >= exp else '#e11d48'),
              box('CURRENT BALANCE', money(balance), '#4f46e5' if balance >= 0 else '#e11d48')]
     gap = 3 * mm
     bw = (width - 3 * gap) / 4

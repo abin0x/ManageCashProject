@@ -33,7 +33,7 @@
                 </div>
                 {% endif %}
 
-                <form method="post" novalidate>
+                <form method="post">
                     {% csrf_token %}
                     {% include 'ManageCash/_form_fields.html' %}
                     <div class="d-flex gap-2 pt-2 border-top mt-4 pt-4">
