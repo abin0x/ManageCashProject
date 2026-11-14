@@ -1,0 +1,50 @@
+{% extends 'ManageCash/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block crumb %}{% if editing %}Transactions / Edit{% else %}Record / New entry{% endif %}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-6">
+        <div class="mc-card">
+            <div class="mc-card-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="tx-icon {{ kind }}">
+                        <i class="bi {% if kind == 'income' %}bi-arrow-down-left{% else %}bi-arrow-up-right{% endif %}"></i>
+                    </div>
+                    <div>
+                        <h5>{{ title }}</h5>
+                        <div class="sub">
+                            {% if kind == 'income' %}Money coming in — salary, business, gifts and more.
+                            {% else %}Money going out — bills, shopping, food and more.{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mc-card-body p-4">
+                {% if not editing %}
+                <div class="type-switch" role="tablist">
+                    <a href="{% url 'transaction_create' 'income' %}" class="income {% if kind == 'income' %}active{% endif %}">
+                        <span class="tx-icon income"><i class="bi bi-plus-lg"></i></span> Cash In
+                    </a>
+                    <a href="{% url 'transaction_create' 'expense' %}" class="expense {% if kind == 'expense' %}active{% endif %}">
+                        <span class="tx-icon expense"><i class="bi bi-dash-lg"></i></span> Expense
+                    </a>
+                </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% include 'ManageCash/_form_fields.html' %}
+                    <div class="d-flex gap-2 pt-2 border-top mt-4 pt-4">
+                        <a href="{% if editing %}{% url 'transactions' %}{% else %}{% url 'dashboard' %}{% endif %}" class="btn btn-light-soft">Cancel</a>
+                        <button type="submit" class="btn {% if kind == 'income' %}btn-income{% else %}btn-expense{% endif %} ms-auto px-4">
+                            <i class="bi bi-check2 me-1"></i> {% if editing %}Save Changes{% else %}Save {% if kind == 'income' %}Cash{% else %}Expense{% endif %}{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

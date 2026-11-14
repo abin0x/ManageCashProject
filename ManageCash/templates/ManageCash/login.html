@@ -1,0 +1,14 @@
+{% extends 'ManageCash/base.html' %}
+{% block title %}Log in{% endblock %}
+{% block content_auth %}
+<h1>Welcome back</h1>
+<p class="text-muted mb-4">Log in with your username or email to continue.</p>
+<form method="post" novalidate>
+    {% csrf_token %}
+    {% include 'ManageCash/_form_fields.html' %}
+    <button type="submit" class="btn btn-primary btn-lg w-100 mt-2">Log in <i class="bi bi-arrow-right ms-1"></i></button>
+</form>
+<p class="text-center text-muted mt-4 mb-0 small">
+    Don't have an account? <a href="{% url 'register' %}" class="fw-semibold text-decoration-none">Create one</a>
+</p>
+{% endblock %}

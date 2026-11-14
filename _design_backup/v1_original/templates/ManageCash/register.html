@@ -1,0 +1,16 @@
+{% extends 'ManageCash/base.html' %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="card shadow-sm auth-card">
+    <div class="card-body p-4">
+        <h3 class="mb-1 text-center">Create Account</h3>
+        <p class="text-muted text-center mb-4">Start managing your cash today</p>
+        <form method="post">
+            {% csrf_token %}
+            {% include 'ManageCash/_form_fields.html' %}
+            <button type="submit" class="btn btn-primary w-100">Register</button>
+        </form>
+        <p class="text-center mt-3 mb-0">Already have an account? <a href="{% url 'login' %}">Login</a></p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'ManageCash/base.html' %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="card shadow-sm auth-card">
+    <div class="card-body p-4">
+        <h3 class="mb-1 text-center">Welcome Back</h3>
+        <p class="text-muted text-center mb-4">Log in with your username or email</p>
+        <form method="post">
+            {% csrf_token %}
+            {% include 'ManageCash/_form_fields.html' %}
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+        </form>
+        <p class="text-center mt-3 mb-0">Don't have an account? <a href="{% url 'register' %}">Register</a></p>
+    </div>
+</div>
+{% endblock %}

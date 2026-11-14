@@ -1,0 +1,45 @@
+{% extends 'ManageCash/base.html' %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h2 class="mb-4">Profile Management</h2>
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm stat-card">
+            <div class="card-body text-center">
+                <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3"
+                     style="width:80px;height:80px;font-size:2rem;">{{ user.username|first|upper }}</div>
+                <h4 class="mb-0">{{ user.get_full_name|default:user.username }}</h4>
+                <p class="text-muted">{{ user.email|default:"No email set" }}</p>
+                <p class="small text-muted mb-3">Member since {{ user.date_joined|date:"d M Y" }}</p>
+                <ul class="list-group list-group-flush text-start">
+                    <li class="list-group-item d-flex justify-content-between"><span>Balance</span><strong>৳ {{ balance|floatformat:2 }}</strong></li>
+                    <li class="list-group-item d-flex justify-content-between"><span>Total Income</span><strong class="text-success">৳ {{ total_income|floatformat:2 }}</strong></li>
+                    <li class="list-group-item d-flex justify-content-between"><span>Total Expense</span><strong class="text-danger">৳ {{ total_expense|floatformat:2 }}</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card shadow-sm stat-card mb-4">
+            <div class="card-header bg-white"><h5 class="mb-0">Edit Profile</h5></div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {% include 'ManageCash/_form_fields.html' with form=profile_form %}
+                    <button type="submit" name="update_profile" class="btn btn-primary">Update Profile</button>
+                </form>
+            </div>
+        </div>
+        <div class="card shadow-sm stat-card">
+            <div class="card-header bg-white"><h5 class="mb-0">Change Password</h5></div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {% include 'ManageCash/_form_fields.html' with form=password_form %}
+                    <button type="submit" name="change_password" class="btn btn-warning">Change Password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

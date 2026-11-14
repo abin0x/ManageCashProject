@@ -1,0 +1,174 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}ManageCash{% endblock %} · ManageCash</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{% static 'ManageCash/css/app.css' %}" rel="stylesheet">
+</head>
+<body>
+{% with url_name=request.resolver_match.url_name kind_arg=request.resolver_match.kwargs.kind %}
+
+{% if user.is_authenticated %}
+{# ======================= App shell ======================= #}
+<aside class="app-sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar" aria-label="Main navigation">
+    <div class="sidebar-head">
+        <a class="sidebar-brand" href="{% url 'dashboard' %}">
+            <span class="brand-mark"><i class="bi bi-wallet2"></i></span> ManageCash
+        </a>
+        <button type="button" class="sidebar-close d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close menu">
+            <i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <nav class="sidebar-scroll">
+    <div class="sidebar-section">Overview</div>
+    <ul class="sidebar-nav">
+        <li><a href="{% url 'dashboard' %}" class="{% if url_name == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-grid-1x2"></i> Dashboard</a></li>
+        <li><a href="{% url 'transactions' %}" class="{% if url_name == 'transactions' or url_name == 'transaction_edit' %}active{% endif %}">
+            <i class="bi bi-arrow-left-right"></i> Transactions</a></li>
+    </ul>
+
+    <div class="sidebar-section">Record</div>
+    <ul class="sidebar-nav">
+        <li><a href="{% url 'transaction_create' 'income' %}" class="{% if url_name == 'transaction_create' and kind_arg == 'income' %}active{% endif %}">
+            <i class="bi bi-plus-circle"></i> Add Cash</a></li>
+        <li><a href="{% url 'transaction_create' 'expense' %}" class="{% if url_name == 'transaction_create' and kind_arg == 'expense' %}active{% endif %}">
+            <i class="bi bi-dash-circle"></i> Add Expense</a></li>
+    </ul>
+
+    <div class="sidebar-section">Account</div>
+    <ul class="sidebar-nav">
+        <li><a href="{% url 'profile' %}" class="{% if url_name == 'profile' %}active{% endif %}">
+            <i class="bi bi-person-circle"></i> Profile</a></li>
+        {% if user.is_staff %}
+        <li><a href="/admin/"><i class="bi bi-shield-lock"></i> Admin Panel</a></li>
+        {% endif %}
+    </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user">
+            <div class="avatar">{{ user.username|first|upper }}</div>
+            <div class="min-w-0">
+                <div class="name">{{ user.get_full_name|default:user.username }}</div>
+                <div class="email">{{ user.email|default:"No email set" }}</div>
+            </div>
+            <form method="post" action="{% url 'logout' %}" class="ms-auto">
+                {% csrf_token %}
+                <button class="sidebar-logout" title="Log out" aria-label="Log out"><i class="bi bi-box-arrow-right fs-5"></i></button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<div class="app-main">
+    <header class="app-topbar">
+        <div class="app-container d-flex align-items-center gap-3">
+            <button class="btn btn-light-soft btn-icon d-lg-none" type="button" data-bs-toggle="offcanvas"
+                    data-bs-target="#sidebar" aria-label="Open menu"><i class="bi bi-list fs-5"></i></button>
+            <div class="min-w-0">
+                <div class="crumb">{% block crumb %}ManageCash{% endblock %}</div>
+                <h1>{% block page_title %}{% endblock %}</h1>
+            </div>
+            <div class="ms-auto d-flex align-items-center gap-2">
+                {% block page_actions %}{% endblock %}
+            </div>
+        </div>
+    </header>
+
+    <main class="app-content">
+        <div class="app-container">
+            {% include 'ManageCash/_messages.html' %}
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="app-container pb-4 small text-muted d-flex justify-content-between">
+        <span>© {% now "Y" %} ManageCash</span>
+        <span>Personal Cash Management</span>
+    </footer>
+</div>
+
+{% else %}
+{# ======================= Auth shell ======================= #}
+<div class="auth-wrap">
+    <section class="auth-aside">
+        <a class="sidebar-brand p-0 mb-auto" href="{% url 'login' %}">
+            <span class="brand-mark"><i class="bi bi-wallet2"></i></span> ManageCash
+        </a>
+
+        <div class="my-5" style="max-width: 460px;">
+            <h2 class="mb-3">Take control of every taka you earn and spend.</h2>
+            <p class="lead mb-4">Record income and expenses in seconds and always know your real balance.</p>
+
+            <div class="auth-feature">
+                <div class="ic"><i class="bi bi-lightning-charge"></i></div>
+                <div><div class="t">Quick entry</div><div class="d">Add cash or expenses with date, source and notes.</div></div>
+            </div>
+            <div class="auth-feature">
+                <div class="ic"><i class="bi bi-graph-up-arrow"></i></div>
+                <div><div class="t">Live balance</div><div class="d">Totals update the moment you save a transaction.</div></div>
+            </div>
+            <div class="auth-feature">
+                <div class="ic"><i class="bi bi-shield-check"></i></div>
+                <div><div class="t">Private by default</div><div class="d">Your records are visible only to your account.</div></div>
+            </div>
+        </div>
+
+        <div class="auth-preview mt-auto">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="lbl">Example balance</span><i class="bi bi-three-dots opacity-50"></i>
+            </div>
+            <div class="val">৳ 48,250.00</div>
+            <div class="d-flex gap-3 mt-2 small">
+                <span><i class="bi bi-arrow-down-left text-success"></i> ৳ 62,000</span>
+                <span><i class="bi bi-arrow-up-right" style="color:#fda4af"></i> ৳ 13,750</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="auth-main">
+        <div class="auth-form">
+            <a class="auth-mobile-brand" href="{% url 'login' %}">
+                <span class="brand-mark"><i class="bi bi-wallet2"></i></span> ManageCash
+            </a>
+            {% include 'ManageCash/_messages.html' %}
+            {% block content_auth %}{% endblock %}
+        </div>
+    </section>
+</div>
+{% endif %}
+
+{% endwith %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Show / hide password fields
+    document.querySelectorAll('input[type="password"]').forEach(function (input) {
+        var wrap = document.createElement('div');
+        wrap.className = 'pw-wrap';
+        input.parentNode.insertBefore(wrap, input);
+        wrap.appendChild(input);
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pw-toggle';
+        btn.setAttribute('aria-label', 'Show password');
+        btn.innerHTML = '<i class="bi bi-eye"></i>';
+        btn.addEventListener('click', function () {
+            var show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.innerHTML = show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+            btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        });
+        wrap.appendChild(btn);
+    });
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

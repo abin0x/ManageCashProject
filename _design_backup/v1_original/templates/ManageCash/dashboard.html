@@ -1,0 +1,66 @@
+{% extends 'ManageCash/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <h2 class="mb-0">Cash Management Dashboard</h2>
+    <div>
+        <a href="{% url 'transaction_create' 'income' %}" class="btn btn-success">+ Add Cash</a>
+        <a href="{% url 'transaction_create' 'expense' %}" class="btn btn-danger">− Add Expense</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card shadow-sm text-bg-primary">
+            <div class="card-body">
+                <div class="small text-uppercase opacity-75">Current Balance</div>
+                <div class="fs-2 fw-bold">৳ {{ balance|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card shadow-sm text-bg-success">
+            <div class="card-body">
+                <div class="small text-uppercase opacity-75">Total Income ({{ income_count }})</div>
+                <div class="fs-2 fw-bold">৳ {{ total_income|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card shadow-sm text-bg-danger">
+            <div class="card-body">
+                <div class="small text-uppercase opacity-75">Total Expense ({{ expense_count }})</div>
+                <div class="fs-2 fw-bold">৳ {{ total_expense|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm stat-card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Recent Transactions</h5>
+        <a href="{% url 'transactions' %}" class="btn btn-sm btn-outline-primary">View all</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr><th>Date</th><th>Type</th><th>Source / Description</th><th class="text-end">Amount</th></tr>
+            </thead>
+            <tbody>
+            {% for t in recent %}
+                <tr>
+                    <td>{{ t.datetime|date:"d M Y, h:i A" }}</td>
+                    <td>{% if t.kind == 'income' %}<span class="badge bg-success">Income</span>{% else %}<span class="badge bg-danger">Expense</span>{% endif %}</td>
+                    <td>{{ t.title }}{% if t.note %}<div class="small text-muted">{{ t.note|truncatechars:60 }}</div>{% endif %}</td>
+                    <td class="text-end fw-semibold {% if t.kind == 'income' %}text-success{% else %}text-danger{% endif %}">
+                        {% if t.kind == 'income' %}+{% else %}−{% endif %}৳ {{ t.amount|floatformat:2 }}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-4">No transactions yet. Add your first cash entry!</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

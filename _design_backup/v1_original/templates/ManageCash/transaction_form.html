@@ -1,0 +1,29 @@
+{% extends 'ManageCash/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm stat-card">
+            <div class="card-header {% if kind == 'income' %}bg-success{% else %}bg-danger{% endif %} text-white">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body p-4">
+                {% if not editing %}
+                <ul class="nav nav-pills mb-4">
+                    <li class="nav-item"><a class="nav-link {% if kind == 'income' %}active bg-success{% endif %}" href="{% url 'transaction_create' 'income' %}">Add Cash</a></li>
+                    <li class="nav-item"><a class="nav-link {% if kind == 'expense' %}active bg-danger{% endif %}" href="{% url 'transaction_create' 'expense' %}">Expense</a></li>
+                </ul>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    {% include 'ManageCash/_form_fields.html' %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn {% if kind == 'income' %}btn-success{% else %}btn-danger{% endif %}">Save</button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

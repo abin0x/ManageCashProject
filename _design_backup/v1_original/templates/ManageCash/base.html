@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}ManageCash{% endblock %} | Personal Cash Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f4f6fb; }
+        .form-field input:not([type=checkbox]), .form-field select, .form-field textarea {
+            display: block; width: 100%; padding: .5rem .75rem; border: 1px solid #ced4da;
+            border-radius: .375rem; background: #fff;
+        }
+        .form-field input:focus, .form-field textarea:focus { outline: none; border-color: #0d6efd;
+            box-shadow: 0 0 0 .2rem rgba(13,110,253,.2); }
+        .form-field .errorlist { list-style: none; padding: 0; margin: .25rem 0 0; color: #dc3545; font-size: .875rem; }
+        .form-field .helptext { display: block; color: #6c757d; font-size: .8rem; margin-top: .25rem; }
+        .form-field .helptext ul { padding-left: 1rem; margin: 0; }
+        .stat-card { border: none; border-radius: 1rem; }
+        .auth-card { max-width: 440px; margin: 4rem auto; border: none; border-radius: 1rem; }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="{% url 'dashboard' %}">💰 ManageCash</a>
+        {% if user.is_authenticated %}
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="nav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'transactions' %}">Transactions</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'transaction_create' 'income' %}">Add Cash</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'transaction_create' 'expense' %}">Add Expense</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'profile' %}">Profile</a></li>
+                {% if user.is_staff %}<li class="nav-item"><a class="nav-link" href="/admin/">Admin</a></li>{% endif %}
+            </ul>
+            <span class="navbar-text text-white me-3">Hi, {{ user.username }}</span>
+            <form method="post" action="{% url 'logout' %}" class="d-inline">
+                {% csrf_token %}
+                <button class="btn btn-outline-light btn-sm">Logout</button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</nav>
+
+<main class="container pb-5">
+    {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
